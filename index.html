@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChromaQuest - Visual Discovery Engine</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <h1 class="app-title">ChromaQuest</h1>
+        <p class="app-tagline">
+          Explore vibrant visual collections powered by intelligent search.
+        </p>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="app-main">
+      <section class="search-section">
+        <form class="search-form" id="search-form" action="#" method="GET">
+          <label for="search-input" class="sr-only"
+            >Search high-resolution images</label
+          >
+          <div class="input-wrapper">
+            <input
+              type="search"
+              id="search-input"
+              placeholder="Search photos, topics, or keywords..."
+              autocomplete="off"
+              required
+            />
+            <button
+              type="button"
+              id="clear-button"
+              class="btn-clear hidden"
+              aria-label="Clear search input"
+            >
+              ✕
+            </button>
+          </div>
+          <button type="submit" id="search-button" class="btn-search">
+            Search
+          </button>
+        </form>
+
+        <!-- Quick Pick Category Chips -->
+        <div class="category-chips" aria-label="Popular Search Topics">
+          <span class="chip-label">Popular:</span>
+          <button type="button" class="chip">Nature</button>
+          <button type="button" class="chip">Architecture</button>
+          <button type="button" class="chip">Culinary</button>
+          <button type="button" class="chip">Cyberpunk</button>
+          <button type="button" class="chip">Minimalist</button>
+        </div>
+      </section>
+
+      <!-- Status Bar -->
+      <div class="results-header">
+        <span id="result-count" class="result-count">Ready to search</span>
+      </div>
+
+      <!-- State 1: Initial & Empty State Container -->
+      <div id="empty-state" class="status-box">
+        <div class="status-icon">🔍</div>
+        <h2 id="empty-title">Search to see results</h2>
+        <p id="empty-message">
+          Enter a query above or click one of the popular suggestion chips to
+          begin exploring.
+        </p>
+      </div>
+
+      <!-- State 2: Loading State Container (Task 1) -->
+      <div id="loading-state" class="status-box hidden" aria-live="polite">
+        <div class="spinner"></div>
+        <h2>Searching Wikimedia Commons...</h2>
+        <p>Fetching high-resolution assets from the visual library.</p>
+      </div>
+
+      <!-- State 3: Error State Container (Task 3) -->
+      <div
+        id="error-state"
+        class="status-box status-error hidden"
+        aria-live="assertive"
+      >
+        <div class="status-icon">⚠️</div>
+        <h2 id="error-title">Something went wrong</h2>
+        <p id="error-message">
+          We couldn't load images right now. Please check your connection and
+          try again.
+        </p>
+        <button type="button" id="retry-button" class="btn-retry">
+          Try Again
+        </button>
+      </div>
+
+      <!-- State 4: Results Grid Container -->
+      <div
+        id="results"
+        class="results-grid"
+        aria-live="polite"
+        aria-busy="false"
+      ></div>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
