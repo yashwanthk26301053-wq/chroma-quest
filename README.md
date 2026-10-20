@@ -1,4 +1,4 @@
-## ChromaQuest - Part 3 (Final Submission)
+## ChromaQuest - Part 1
 
 ### Links
 
