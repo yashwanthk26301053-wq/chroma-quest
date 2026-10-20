@@ -72,6 +72,30 @@
         </p>
       </div>
 
+      <!-- State 2: Loading State Container (Task 1) -->
+      <div id="loading-state" class="status-box hidden" aria-live="polite">
+        <div class="spinner"></div>
+        <h2>Searching Wikimedia Commons...</h2>
+        <p>Fetching high-resolution assets from the visual library.</p>
+      </div>
+
+      <!-- State 3: Error State Container (Task 3) -->
+      <div
+        id="error-state"
+        class="status-box status-error hidden"
+        aria-live="assertive"
+      >
+        <div class="status-icon">⚠️</div>
+        <h2 id="error-title">Something went wrong</h2>
+        <p id="error-message">
+          We couldn't load images right now. Please check your connection and
+          try again.
+        </p>
+        <button type="button" id="retry-button" class="btn-retry">
+          Try Again
+        </button>
+      </div>
+
       <!-- State 4: Results Grid Container -->
       <div
         id="results"
