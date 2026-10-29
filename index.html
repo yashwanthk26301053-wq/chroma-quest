@@ -16,7 +16,7 @@
         </p>
       </div>
     </header>
-
+ 
     <!-- Main Content -->
     <main class="app-main">
       <section class="search-section">
@@ -45,7 +45,7 @@
             Search
           </button>
         </form>
-
+ 
         <!-- Quick Pick Category Chips -->
         <div class="category-chips" aria-label="Popular Search Topics">
           <span class="chip-label">Popular:</span>
@@ -56,13 +56,15 @@
           <button type="button" class="chip">Minimalist</button>
         </div>
       </section>
-
-      <!-- Status Bar -->
+ 
+      <!-- Status Bar (the "page v2" text proves this file version is live) -->
       <div class="results-header">
-        <span id="result-count" class="result-count">Ready to search</span>
+        <span id="result-count" class="result-count"
+          >Ready to search (page v2)</span
+        >
       </div>
-
-      <!-- State 1: Initial & Empty State Container -->
+ 
+      <!-- Empty / initial state -->
       <div id="empty-state" class="status-box">
         <div class="status-icon">🔍</div>
         <h2 id="empty-title">Search to see results</h2>
@@ -71,21 +73,24 @@
           begin exploring.
         </p>
       </div>
-      <!-- Loading State -->
+ 
+      <!-- Loading state -->
       <div id="loading-state" class="status-box hidden">
         <div class="spinner"></div>
         <h2>Searching...</h2>
       </div>
-
-      <!-- Error State -->
+ 
+      <!-- Error state -->
       <div id="error-state" class="status-box status-error hidden">
         <div class="status-icon">⚠️</div>
         <h2>Something went wrong</h2>
         <p id="error-message"></p>
-        <button type="button" id="retry-button" class="btn-retry">Try again</button>
+        <button type="button" id="retry-button" class="btn-retry">
+          Try again
+        </button>
       </div>
-
-      <!-- State 4: Results Grid Container -->
+ 
+      <!-- Results grid -->
       <div
         id="results"
         class="results-grid"
@@ -93,7 +98,7 @@
         aria-busy="false"
       ></div>
     </main>
-
+ 
     <script src="script.js"></script>
   </body>
 </html>
