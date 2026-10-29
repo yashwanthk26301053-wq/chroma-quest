@@ -77,7 +77,7 @@ async function performSearch(rawQuery) {
       const imageUrl = imageInfo.url;
 
       // Filter non-image media types
-      if (!/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(imageUrl)) return;
+      if (!/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(new URL(imageUrl).pathname)) return;
 
       renderedCount++;
 
