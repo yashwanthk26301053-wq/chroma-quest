@@ -1,342 +1,215 @@
-:root {
-  --bg-color: #0d1117;
-  --card-bg: #161b22;
-  --border-color: #30363d;
-  --text-primary: #f0f6fc;
-  --text-secondary: #8b949e;
-  --accent-color: #58a6ff;
-  --accent-hover: #1f6feb;
-  --error-color: #f85149;
-  --error-bg: rgba(248, 81, 73, 0.1);
-  --chip-bg: #21262d;
-  --chip-hover: #30363d;
-}
+// DOM References
+const searchForm = document.getElementById("search-form");
+const searchInput = document.getElementById("search-input");
+const clearButton = document.getElementById("clear-button");
+const resultsContainer = document.getElementById("results");
+const resultCount = document.getElementById("result-count");
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+// State Elements
+const emptyState = document.getElementById("empty-state");
+const emptyTitle = document.getElementById("empty-title");
+const emptyMessage = document.getElementById("empty-message");
 
-body {
-  background-color: var(--bg-color);
-  color: var(--text-primary);
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
-    sans-serif;
-  line-height: 1.5;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
+const loadingState = document.getElementById("loading-state");
 
-/* Helper Class for State Toggling */
-.hidden {
-  display: none !important;
-}
+const errorState = document.getElementById("error-state");
+const errorMessage = document.getElementById("error-message");
+const retryButton = document.getElementById("retry-button");
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  border: 0;
-}
+const categoryChips = document.querySelectorAll(".chip");
 
-/* App Header */
-.app-header {
-  padding: 2.5rem 1rem 1.5rem;
-  text-align: center;
-  border-bottom: 1px solid var(--border-color);
-}
+// Track last searched query for Retry button
+let lastQuery = "";
 
-.app-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: var(--accent-color);
-  letter-spacing: -0.5px;
-}
+/**
+ * Main Search Execution Function
+ * @param {string} rawQuery
+ */
+async function performSearch(rawQuery) {
+  const query = rawQuery.trim();
 
-.app-tagline {
-  color: var(--text-secondary);
-  font-size: 1rem;
-  margin-top: 0.25rem;
-}
+  // Task 4 (Part 2): Ignore empty searches
+  if (!query) return;
 
-/* Main Container */
-.app-main {
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
-}
+  lastQuery = query;
+  searchInput.value = query;
+  toggleClearButton();
 
-/* Search Form */
-.search-section {
-  margin-bottom: 2rem;
-}
+  // Reset UI View States before initiating fetch
+  hideAllStates();
+  showLoadingState();
+  resultCount.textContent = `Searching for "${query}"...`;
 
-.search-form {
-  display: flex;
-  gap: 0.75rem;
-  max-width: 650px;
-  margin: 0 auto 1.25rem;
-}
+  // Build key-free API URL
+  const apiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrnamespace=6&gsrlimit=24&prop=imageinfo&iiprop=url|extmetadata&format=json&origin=*`;
 
-.input-wrapper {
-  position: relative;
-  flex: 1;
-}
+  try {
+    const response = await fetch(apiUrl);
 
-.search-form input[type="search"] {
-  width: 100%;
-  padding: 0.85rem 2.5rem 0.85rem 1rem;
-  font-size: 1.05rem;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background-color: var(--card-bg);
-  color: var(--text-primary);
-  outline: none;
-  transition: border-color 0.2s ease;
-}
+    // Task 3: Response check
+    if (!response.ok) {
+      throw new Error(`Server returned status code ${response.status}`);
+    }
 
-.search-form input[type="search"]:focus {
-  border-color: var(--accent-color);
-}
+    const data = await response.json();
+    const pages = data.query?.pages;
 
-.btn-clear {
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 1rem;
-  cursor: pointer;
-  padding: 0.25rem;
-}
+    hideLoadingState();
 
-.btn-clear:hover {
-  color: var(--text-primary);
-}
+    // Task 2: Check for empty results
+    if (!pages) {
+      showEmptyState(
+        `No results for "${query}"`,
+        "We couldn't find any images matching your search term. Try searching for a broader keyword or a popular category above.",
+      );
+      resultCount.textContent = `Showing 0 results for "${query}"`;
+      return;
+    }
 
-.btn-search {
-  padding: 0.85rem 1.75rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #ffffff;
-  background-color: var(--accent-color);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
+    const items = Object.values(pages);
+    let renderedCount = 0;
 
-.btn-search:hover {
-  background-color: var(--accent-hover);
-}
+    // Task 3 (Part 2): Render Results
+    items.forEach((item) => {
+      const imageInfo = item.imageinfo?.[0];
+      if (!imageInfo || !imageInfo.url) return;
 
-/* Category Chips */
-.category-chips {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
+      const imageUrl = imageInfo.url;
 
-.chip-label {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-}
+      // Filter non-image media types
+      if (!/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(imageUrl)) return;
 
-.chip {
-  background-color: var(--chip-bg);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 20px;
-  padding: 0.35rem 0.85rem;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease;
-}
+      renderedCount++;
 
-.chip:hover {
-  background-color: var(--chip-hover);
-  border-color: var(--accent-color);
-}
+      // Title & Author extraction
+      let title = item.title.replace(/^File:/i, "").replace(/\.[^/.]+$/, "");
+      title = title.replace(/_/g, " ");
 
-/* Results Header Bar */
-.results-header {
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 0.75rem;
-}
+      const rawArtist = imageInfo.extmetadata?.Artist?.value;
+      const artist = rawArtist ? stripHtml(rawArtist) : "Wikimedia Commons";
 
-.result-count {
-  font-size: 0.95rem;
-  color: var(--text-secondary);
-}
+      // Build DOM elements
+      const card = document.createElement("article");
+      card.className = "image-card";
 
-/* Status Cards (Empty, Loading, Error) */
-.status-box {
-  text-align: center;
-  padding: 4rem 1.5rem;
-  color: var(--text-secondary);
-  background-color: var(--card-bg);
-  border: 1px dashed var(--border-color);
-  border-radius: 12px;
-  margin: 1rem 0;
-}
+      const cardLink = document.createElement("a");
+      cardLink.className = "card-link";
+      cardLink.href = imageInfo.descriptionurl || imageUrl;
+      cardLink.target = "_blank";
+      cardLink.rel = "noopener noreferrer";
 
-.status-box h2 {
-  color: var(--text-primary);
-  font-size: 1.4rem;
-  margin: 0.75rem 0 0.5rem;
-}
+      const img = document.createElement("img");
+      img.className = "card-image";
+      img.src = imageUrl;
+      img.alt = title;
+      img.loading = "lazy";
 
-.status-icon {
-  font-size: 2.8rem;
-}
+      const cardBody = document.createElement("div");
+      cardBody.className = "card-body";
 
-.status-error {
-  border-color: var(--error-color);
-  background-color: var(--error-bg);
-}
+      const cardTitle = document.createElement("h3");
+      cardTitle.className = "card-title";
+      cardTitle.textContent = title;
 
-.btn-retry {
-  margin-top: 1.25rem;
-  padding: 0.6rem 1.25rem;
-  background-color: transparent;
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: background-color 0.2s ease;
-}
+      const cardAuthor = document.createElement("p");
+      cardAuthor.className = "card-author";
+      cardAuthor.textContent = `By: ${artist}`;
 
-.btn-retry:hover {
-  background-color: var(--chip-hover);
-}
+      cardBody.appendChild(cardTitle);
+      cardBody.appendChild(cardAuthor);
 
-/* CSS Loading Spinner */
-.spinner {
-  width: 42px;
-  height: 42px;
-  margin: 0 auto;
-  border: 4px solid var(--border-color);
-  border-top-color: var(--accent-color);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
+      cardLink.appendChild(img);
+      cardLink.appendChild(cardBody);
 
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
+      card.appendChild(cardLink);
+
+      resultsContainer.appendChild(card);
+    });
+
+    if (renderedCount > 0) {
+      resultsContainer.classList.remove("hidden");
+      resultCount.textContent = `Showing ${renderedCount} result${renderedCount === 1 ? "" : "s"} for "${query}"`;
+    } else {
+      showEmptyState(
+        `No images found for "${query}"`,
+        "The server returned assets, but none were previewable image files. Try another keyword.",
+      );
+      resultCount.textContent = `Showing 0 results for "${query}"`;
+    }
+  } catch (error) {
+    console.error("Search fetch error:", error);
+    hideLoadingState();
+    showErrorState(
+      "Something went wrong while loading results. Please check your internet connection or try again shortly.",
+    );
+    resultCount.textContent = "Search failed";
   }
 }
 
-/* Image Grid & Cards */
-.results-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1.5rem;
+// State Helper Functions
+function hideAllStates() {
+  emptyState.classList.add("hidden");
+  loadingState.classList.add("hidden");
+  errorState.classList.add("hidden");
+  resultsContainer.classList.add("hidden");
+  resultsContainer.innerHTML = "";
 }
 
-.image-card {
-  background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  animation: fadeIn 0.4s ease forwards;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
+function showLoadingState() {
+  loadingState.classList.remove("hidden");
+  resultsContainer.setAttribute("aria-busy", "true");
 }
 
-.image-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+function hideLoadingState() {
+  loadingState.classList.add("hidden");
+  resultsContainer.setAttribute("aria-busy", "false");
 }
 
-.card-link {
-  text-decoration: none;
-  color: inherit;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+function showEmptyState(title, message) {
+  emptyTitle.textContent = title;
+  emptyMessage.textContent = message;
+  emptyState.classList.remove("hidden");
 }
 
-.card-image {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-  background-color: var(--chip-bg);
+function showErrorState(message) {
+  errorMessage.textContent = message;
+  errorState.classList.remove("hidden");
 }
 
-.card-body {
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
+function stripHtml(html) {
+  const tmp = document.createElement("DIV");
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || "Unknown";
 }
 
-.card-title {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 0.5rem;
-  display: -webkit-box;
-  line-clamp: 2;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.card-author {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  margin-top: auto;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+function toggleClearButton() {
+  if (searchInput.value.trim().length > 0) {
+    clearButton.classList.remove("hidden");
+  } else {
+    clearButton.classList.add("hidden");
   }
 }
 
-/* Responsive Mobile Layout Adjustments */
-@media (max-width: 600px) {
-  .app-main {
-    padding: 1.25rem 1rem;
-  }
-  .search-form {
-    flex-direction: column;
-  }
-  .btn-search {
-    width: 100%;
-  }
-  .results-grid {
-    grid-template-columns: 1fr;
-  }
-}
+// Event Listeners
+searchForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  performSearch(searchInput.value);
+});
+
+searchInput.addEventListener("input", toggleClearButton);
+
+clearButton.addEventListener("click", () => {
+  searchInput.value = "";
+  toggleClearButton();
+  searchInput.focus();
+});
+
+categoryChips.forEach((chip) => {
+  chip.addEventListener("click", () => {
+    performSearch(chip.textContent.trim());
+  });
+});
+
+retryButton.addEventListener("click", () => {
+  if (lastQuery) performSearch(lastQuery);
+});
